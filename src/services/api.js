@@ -23,6 +23,19 @@ class ApiService {
     return response.json();
   }
 
+  async uploadFile(endpoint, file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
   // Add other methods as needed (PUT, DELETE, etc.)
 }
 

@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import api from '../services/api';
 
 const scanMessages = ["Analyzing Branding...", "Checking URLs...", "Evaluating Tone..."];
 
 const ImageUploader = ({ onFileSelect, onScanComplete }) => {
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [uploadState, setUploadState] = useState('IDLE'); // IDLE, UPLOADING, SCANNING, SUCCESS
+  const [uploadState, setUploadState] = useState('IDLE'); // IDLE, UPLOADING, SCANNING, RESULT, ERROR
   const [scanText, setScanText] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
   const intervalRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -21,29 +23,24 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
         setScanText(scanMessages[index]);
       }, 1500);
 
-      // Simulate scan duration (3.5s) then set SUCCESS and report mock result
-      timeoutRef.current = setTimeout(() => {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-        setScanText('');
-        setUploadState('SUCCESS');
-
-        // mock result to send to parent
-        const mockResult = {
-          score: 8,
-          verdict: 'Phishing',
-          red_flags: [
-            'Urgent language detected',
-            'Suspicious sender domain',
-            'Generic greeting'
-          ],
-          recommendation: 'Do not click any links and block the sender immediately.'
-        };
-
-        if (typeof onScanComplete === 'function') {
-          try { onScanComplete(mockResult); } catch (e) { console.error(e); }
-        }
-      }, 3500);
+      // Perform real API upload
+      api.uploadFile('/api/analyze', selectedFile)
+        .then((result) => {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          setScanText('');
+          setUploadState('RESULT');
+          if (typeof onScanComplete === 'function') {
+            try { onScanComplete(result); } catch (e) { console.error(e); }
+          }
+        })
+        .catch((error) => {
+          console.error('API Error:', error);
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          setScanText('');
+          setUploadState('ERROR');
+        });
     }
 
     // Cleanup when leaving SCANNING or unmounting
@@ -57,7 +54,7 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
         timeoutRef.current = null;
       }
     };
-  }, [uploadState, onScanComplete]);
+  }, [uploadState, selectedFile, onScanComplete]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -85,6 +82,7 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
       return;
     }
 
+    setSelectedFile(file);
     setUploadState('UPLOADING');
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -159,7 +157,11 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
                 </>
               )}
             </div>
-            <p className="text-slate-600">Click to upload a different image</p>
+            {uploadState === 'ERROR' ? (
+              <p className="text-red-600 text-sm">Analysis failed. Please try again or check your connection.</p>
+            ) : (
+              <p className="text-slate-600">Click to upload a different image</p>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
