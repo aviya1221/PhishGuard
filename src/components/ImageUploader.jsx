@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 
 const scanMessages = ["Analyzing Branding...", "Checking URLs...", "Evaluating Tone..."];
 
-const ImageUploader = ({ onFileSelect }) => {
+const ImageUploader = ({ onFileSelect, onScanComplete }) => {
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState(null);
   const [uploadState, setUploadState] = useState('IDLE'); // IDLE, UPLOADING, SCANNING, SUCCESS
@@ -21,12 +21,28 @@ const ImageUploader = ({ onFileSelect }) => {
         setScanText(scanMessages[index]);
       }, 1500);
 
-      // Simulate scan duration (3.5s) then set SUCCESS
+      // Simulate scan duration (3.5s) then set SUCCESS and report mock result
       timeoutRef.current = setTimeout(() => {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
         setScanText('');
         setUploadState('SUCCESS');
+
+        // mock result to send to parent
+        const mockResult = {
+          score: 8,
+          verdict: 'Phishing',
+          red_flags: [
+            'Urgent language detected',
+            'Suspicious sender domain',
+            'Generic greeting'
+          ],
+          recommendation: 'Do not click any links and block the sender immediately.'
+        };
+
+        if (typeof onScanComplete === 'function') {
+          try { onScanComplete(mockResult); } catch (e) { console.error(e); }
+        }
       }, 3500);
     }
 
@@ -41,7 +57,7 @@ const ImageUploader = ({ onFileSelect }) => {
         timeoutRef.current = null;
       }
     };
-  }, [uploadState]);
+  }, [uploadState, onScanComplete]);
 
   const handleDrag = (e) => {
     e.preventDefault();
