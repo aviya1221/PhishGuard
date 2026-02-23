@@ -1,10 +1,47 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+
+const scanMessages = ["Analyzing Branding...", "Checking URLs...", "Evaluating Tone..."];
 
 const ImageUploader = ({ onFileSelect }) => {
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [uploadState, setUploadState] = useState('IDLE'); // IDLE, UPLOADING
+  const [uploadState, setUploadState] = useState('IDLE'); // IDLE, UPLOADING, SCANNING, SUCCESS
+  const [scanText, setScanText] = useState('');
   const fileInputRef = useRef(null);
+  const intervalRef = useRef(null);
+  const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    // Start scanning cycle when entering SCANNING
+    if (uploadState === 'SCANNING') {
+      // initialize text and start cycling
+      let index = 0;
+      intervalRef.current = setInterval(() => {
+        index = (index + 1) % scanMessages.length;
+        setScanText(scanMessages[index]);
+      }, 1500);
+
+      // Simulate scan duration (3.5s) then set SUCCESS
+      timeoutRef.current = setTimeout(() => {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+        setScanText('');
+        setUploadState('SUCCESS');
+      }, 3500);
+    }
+
+    // Cleanup when leaving SCANNING or unmounting
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [uploadState]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -36,7 +73,9 @@ const ImageUploader = ({ onFileSelect }) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreview(e.target.result);
-      setUploadState('IDLE'); // For now, back to IDLE after preview
+      // start with first message then enter SCANNING
+      setScanText(scanMessages[0]);
+      setUploadState('SCANNING');
       onFileSelect && onFileSelect(file);
     };
     reader.readAsDataURL(file);
@@ -50,6 +89,20 @@ const ImageUploader = ({ onFileSelect }) => {
     if (e.target.files && e.target.files[0]) {
       handleFile(e.target.files[0]);
     }
+  };
+
+  const handleCancel = () => {
+    // stop timers and return to IDLE
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setScanText('');
+    setUploadState('IDLE');
   };
 
   return (
@@ -73,7 +126,23 @@ const ImageUploader = ({ onFileSelect }) => {
         />
         {preview ? (
           <div className="space-y-4">
-            <img src={preview} alt="Preview" className="max-w-full max-h-64 object-contain rounded-lg shadow-md mx-auto" />
+            <div className="relative overflow-hidden rounded-lg mx-auto inline-block">
+              <img src={preview} alt="Preview" className="max-w-full max-h-64 object-contain shadow-md" />
+              {uploadState === 'SCANNING' && (
+                <>
+                  <div className="absolute inset-0 bg-black bg-opacity-40 z-10 flex items-center justify-center">
+                    <div className="text-white text-lg font-semibold z-20">{scanText}</div>
+                  </div>
+                  <button
+                    onClick={handleCancel}
+                    className="absolute top-2 right-2 z-30 bg-white bg-opacity-90 text-xs px-2 py-1 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <div className="absolute left-0 w-full h-0.5 bg-red-400 scan-line z-20"></div>
+                </>
+              )}
+            </div>
             <p className="text-slate-600">Click to upload a different image</p>
           </div>
         ) : (
