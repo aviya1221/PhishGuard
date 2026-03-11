@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import api from '../services/api';
-
-const scanMessages = ["Analyzing Branding...", "Checking URLs...", "Evaluating Tone..."];
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ImageUploader = ({ onFileSelect, onScanComplete }) => {
+  const { t } = useLanguage();
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState(null);
   const [uploadState, setUploadState] = useState('IDLE'); // IDLE, UPLOADING, SCANNING, RESULT, ERROR
@@ -12,6 +12,8 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
   const fileInputRef = useRef(null);
   const intervalRef = useRef(null);
   const timeoutRef = useRef(null);
+
+  const scanMessages = [t('analyzingBranding'), t('checkingUrls'), t('evaluatingTone')];
 
   useEffect(() => {
     // Start scanning cycle when entering SCANNING
@@ -54,7 +56,7 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
         timeoutRef.current = null;
       }
     };
-  }, [uploadState, selectedFile, onScanComplete]);
+  }, [uploadState, selectedFile, onScanComplete, scanMessages]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -151,34 +153,34 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
                     onClick={handleCancel}
                     className="absolute top-2 right-2 z-30 bg-white bg-opacity-90 text-xs px-2 py-1 rounded"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <div className="absolute left-0 w-full h-0.5 bg-red-400 scan-line z-20"></div>
                 </>
               )}
             </div>
             {uploadState === 'ERROR' ? (
-              <p className="text-red-600 text-sm">Analysis failed. Please try again or check your connection.</p>
+              <p className="text-red-600 text-sm">{t('analysisFailed')}</p>
             ) : (
-              <p className="text-slate-600">Click to upload a different image</p>
+              <p className="text-slate-600 dark:text-slate-400">{t('clickDifferent')}</p>
             )}
           </div>
         ) : (
           <div className="space-y-4">
             <div className="text-4xl">📁</div>
-            <p className="text-slate-700 font-medium">
-              {uploadState === 'UPLOADING' ? 'Uploading...' : 'Drag & drop your image here'}
+            <p className="text-slate-700 dark:text-slate-300 font-medium">
+              {uploadState === 'UPLOADING' ? t('uploading') : t('dragDrop')}
             </p>
-            <p className="text-slate-500 text-sm">or click to browse</p>
-            <p className="text-slate-400 text-xs">Supports PNG, JPG, JPEG</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">{t('orBrowse')}</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs">{t('supports')}</p>
           </div>
         )}
       </div>
 
-      <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-amber-800 text-sm font-medium">Privacy Notice</p>
-        <p className="text-amber-700 text-xs mt-1">
-          Before uploading, please crop out any sensitive personal information (such as faces, addresses, or personal details) to protect your privacy.
+      <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">{t('privacyNotice')}</p>
+        <p className="text-amber-700 dark:text-amber-300 text-xs mt-1">
+          {t('privacyText')}
         </p>
       </div>
     </div>

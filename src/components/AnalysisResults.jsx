@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const getColorForScore = (score) => {
   if (score <= 3) return '#16a34a'; // green
@@ -6,7 +7,7 @@ const getColorForScore = (score) => {
   return '#dc2626'; // red
 };
 
-const SemiCircleGauge = ({ score }) => {
+const SemiCircleGauge = ({ score, t }) => {
   const normalized = Math.max(1, Math.min(10, score));
   const percent = (normalized - 1) / 9; // 0..1
   const stroke = 14;
@@ -30,7 +31,7 @@ const SemiCircleGauge = ({ score }) => {
           strokeDasharray={`${dash} ${gap}`}
         />
         <text x="0" y="-20" textAnchor="middle" className="text-sm font-medium" fill="#111827" style={{fontSize: '14px'}}>
-          Score
+          {t('score')}
         </text>
         <text x="0" y="28" textAnchor="middle" className="font-bold" style={{fontSize: '20px', fill: color}}>
           {score}/10
@@ -42,6 +43,7 @@ const SemiCircleGauge = ({ score }) => {
 
 const AnalysisResults = ({ result }) => {
   const wrapperRef = useRef(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (wrapperRef.current) {
@@ -53,29 +55,29 @@ const AnalysisResults = ({ result }) => {
   const { score, verdict, red_flags, recommendation } = result;
 
   return (
-    <div ref={wrapperRef} className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6 mt-6">
+    <div ref={wrapperRef} className="w-full max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mt-6">
       <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
         <div className="flex-0 w-full md:w-1/3 flex justify-center">
-          <SemiCircleGauge score={score} />
+          <SemiCircleGauge score={score} t={t} />
         </div>
         <div className="flex-1">
-          <h2 className="text-2xl font-semibold text-slate-900">{verdict}</h2>
-          <p className="text-sm text-slate-500 mt-1">Phishing assessment based on AI analysis</p>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{verdict}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('verdictDesc')}</p>
 
           <div className="mt-4">
-            <h3 className="text-lg font-medium text-slate-800">Reasoning Report</h3>
+            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">{t('reasoningReport')}</h3>
             <ul className="mt-2 space-y-2">
               {red_flags && red_flags.map((flag, i) => (
-                <li key={i} className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-800">
+                <li key={i} className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-md text-sm text-red-800 dark:text-red-200">
                   {flag}
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="mt-4 p-4 bg-slate-50 border border-slate-100 rounded-md">
-            <h4 className="font-semibold text-slate-800">Recommendation</h4>
-            <p className="mt-2 text-sm text-slate-700">{recommendation}</p>
+          <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-md">
+            <h4 className="font-semibold text-slate-800 dark:text-slate-200">{t('recommendation')}</h4>
+            <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{recommendation}</p>
           </div>
         </div>
       </div>
