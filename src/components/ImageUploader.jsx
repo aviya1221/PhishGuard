@@ -2,61 +2,61 @@ import { useState, useRef, useEffect } from 'react';
 import api from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 
+const SCAN_MESSAGE_KEYS = ['analyzingBranding', 'checkingUrls', 'evaluatingTone'];
+
 const ImageUploader = ({ onFileSelect, onScanComplete }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState(null);
   const [uploadState, setUploadState] = useState('IDLE'); // IDLE, UPLOADING, SCANNING, RESULT, ERROR
-  const [scanText, setScanText] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [scanIndex, setScanIndex] = useState(0);
   const fileInputRef = useRef(null);
-  const intervalRef = useRef(null);
-  const timeoutRef = useRef(null);
+  const abortRef = useRef(null);
 
-  const scanMessages = [t('analyzingBranding'), t('checkingUrls'), t('evaluatingTone')];
-
+  // Cycle the scan messages while scanning. Only depends on uploadState,
+  // so re-renders caused by the message change don't restart anything.
   useEffect(() => {
-    // Start scanning cycle when entering SCANNING
-    if (uploadState === 'SCANNING') {
-      // initialize text and start cycling
-      let index = 0;
-      intervalRef.current = setInterval(() => {
-        index = (index + 1) % scanMessages.length;
-        setScanText(scanMessages[index]);
-      }, 1500);
+    if (uploadState !== 'SCANNING') return;
+    const intervalId = setInterval(() => {
+      setScanIndex((index) => (index + 1) % SCAN_MESSAGE_KEYS.length);
+    }, 1500);
+    return () => clearInterval(intervalId);
+  }, [uploadState]);
 
-      // Perform real API upload
-      api.uploadFile('/api/analyze', selectedFile)
-        .then((result) => {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-          setScanText('');
-          setUploadState('RESULT');
-          if (typeof onScanComplete === 'function') {
-            try { onScanComplete(result); } catch (e) { console.error(e); }
-          }
-        })
-        .catch((error) => {
-          console.error('API Error:', error);
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-          setScanText('');
-          setUploadState('ERROR');
-        });
+  // Abort any in-flight request on unmount
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const abortScan = () => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
     }
+  };
 
-    // Cleanup when leaving SCANNING or unmounting
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
-  }, [uploadState, selectedFile, onScanComplete, scanMessages]);
+  // Sends exactly one request per selected file
+  const startScan = (file) => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setScanIndex(0);
+    setUploadState('SCANNING');
+
+    api.uploadFile('/api/analyze', file, language, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        setUploadState('RESULT');
+        if (typeof onScanComplete === 'function') {
+          try { onScanComplete(result); } catch (e) { console.error(e); }
+        }
+      })
+      .catch((error) => {
+        if (error.name === 'AbortError') return;
+        console.error('API Error:', error);
+        setUploadState('ERROR');
+      })
+      .finally(() => {
+        if (abortRef.current === controller) abortRef.current = null;
+      });
+  };
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -84,14 +84,13 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
       return;
     }
 
-    setSelectedFile(file);
+    // A new file replaces any scan that is still running
+    abortScan();
     setUploadState('UPLOADING');
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreview(e.target.result);
-      // start with first message then enter SCANNING
-      setScanText(scanMessages[0]);
-      setUploadState('SCANNING');
+      startScan(file);
       onFileSelect && onFileSelect(file);
     };
     reader.readAsDataURL(file);
@@ -105,19 +104,14 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
     if (e.target.files && e.target.files[0]) {
       handleFile(e.target.files[0]);
     }
+    // Reset so picking the same file again (e.g. after Cancel) still fires onChange
+    e.target.value = '';
   };
 
-  const handleCancel = () => {
-    // stop timers and return to IDLE
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    setScanText('');
+  const handleCancel = (e) => {
+    // Keep the click from reaching the drop zone, which would open the file picker
+    e.stopPropagation();
+    abortScan();
     setUploadState('IDLE');
   };
 
@@ -147,7 +141,7 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
               {uploadState === 'SCANNING' && (
                 <>
                   <div className="absolute inset-0 bg-black bg-opacity-40 z-10 flex items-center justify-center">
-                    <div className="text-white text-lg font-semibold z-20">{scanText}</div>
+                    <div className="text-white text-lg font-semibold z-20">{t(SCAN_MESSAGE_KEYS[scanIndex])}</div>
                   </div>
                   <button
                     onClick={handleCancel}

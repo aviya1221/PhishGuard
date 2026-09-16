@@ -1,16 +1,257 @@
-# React + Vite
+# PhishGuard AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PhishGuard AI היא אפליקציית ווב שמזהה ניסיונות פישינג מתוך צילומי מסך.
+המשתמש מעלה תמונה (למשל צילום של מייל, SMS או דף התחברות), והמערכת שולחת אותה למודל ראייה של Google Gemini. המודל מחזיר ציון סיכון, הכרעה, רשימת סימנים מחשידים והמלצה מה לעשות.
 
-Currently, two official plugins are available:
+הפרויקט בנוי משני חלקים:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| חלק | תיקייה | טכנולוגיה |
+|------|---------|------------|
+| צד לקוח (Frontend) | תיקיית השורש (`src/`) | React 19 + Vite 7 + Tailwind CSS 3 |
+| צד שרת (Backend) | `server-phishGuard/` | Python 3.13 + FastAPI + Google GenAI SDK |
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## יכולות עיקריות
 
-## Expanding the ESLint configuration
+- **העלאת תמונה ב-Drag & Drop** או בלחיצה, עם תצוגה מקדימה. נתמכים קבצי PNG, JPG ו-JPEG.
+- **אנימציית סריקה**: קו "לייזר" שעובר על התמונה, והודעות סטטוס מתחלפות ("Analyzing Branding...", "Checking URLs...", "Evaluating Tone...").
+- **ניתוח AI כפול**:
+  - *ניתוח ויזואלי*: לוגו, פונטים וצבעים שלא תואמים למותג, מבנה טפסים חשוד, מחוון אבטחה חסר.
+  - *ניתוח טקסטואלי*: הנדסה חברתית, שפה דחופה, איומים, שגיאות כתיב, דומיינים וכתובות מייל חשודים.
+- **דוח תוצאות**: מד חצי-עיגול עם ציון 1–10 בצבעים (ירוק, צהוב, אדום), ההכרעה, רשימת הסימנים המחשידים והמלצה.
+- **דו-לשוניות**: אנגלית ועברית, כולל מעבר ל-RTL. השפה נשלחת גם לשרת, כך שהמודל עונה בשפה שנבחרה.
+- **מצב כהה/בהיר**: הבחירה נשמרת ב-`localStorage`.
+- **פרטיות**: הודעה שמבקשת מהמשתמש לחתוך מידע אישי לפני ההעלאה. בשרת התמונה מעובדת בזיכרון בלבד ולא נשמרת לדיסק.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## ארכיטקטורה
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as React Client (Vite)
+    participant API as FastAPI Server
+    participant AI as Google Gemini
+
+    User->>UI: Drop / select screenshot
+    UI->>UI: Validate type, show preview, start scan animation
+    UI->>API: POST /api/analyze (multipart: file, language)
+    API->>API: await file.read() — in memory only
+    API->>AI: prompt + image bytes (JSON mode, temperature 0.1)
+    AI-->>API: { score, verdict, red_flags, recommendation }
+    API->>API: Validate with Pydantic (AnalysisResponse)
+    API-->>UI: JSON response
+    UI->>User: Gauge + verdict + red flags + recommendation
+```
+
+---
+
+## מבנה הפרויקט
+
+```
+cli-phishGuard/
+├── index.html
+├── package.json
+├── vite.config.js
+├── tailwind.config.js          # darkMode: 'class'
+├── postcss.config.js
+├── eslint.config.js
+├── .env.local                  # VITE_API_BASE_URL (לא נכנס ל-git)
+├── .claude/skills/             # הנחיות ל-Claude: interaction, secure-arch, visualizer
+├── src/
+│   ├── main.jsx                # נקודת הכניסה
+│   ├── App.jsx                 # עוטף ב-ThemeProvider ו-LanguageProvider ומחזיק את התוצאה
+│   ├── index.css               # Tailwind + אנימציית scan-line
+│   ├── components/
+│   │   ├── Header.jsx          # כותרת, כפתור מצב כהה וכפתור שפה
+│   │   ├── ImageUploader.jsx   # Drag & Drop, תצוגה מקדימה, סריקה וקריאה ל-API
+│   │   └── AnalysisResults.jsx # מד הציון והדוח
+│   ├── contexts/
+│   │   ├── ThemeContext.jsx    # מצב כהה/בהיר
+│   │   └── LanguageContext.jsx # תרגומים (en/he), כיוון RTL/LTR
+│   └── services/
+│       └── api.js              # עטיפה ל-fetch (get, post, uploadFile)
+│
+└── server-phishGuard/          # צד השרת (באותו ריפו)
+    ├── main.py                 # אפליקציית FastAPI, CORS, endpoints
+    ├── models/schemas.py       # AnalysisResponse (Pydantic)
+    ├── services/gemini_service.py  # הפרומפט, הקריאה ל-Gemini ופענוח התשובה
+    ├── check.py                # סקריפט עזר: מדפיס את המודלים הזמינים ב-Gemini
+    ├── requirements.txt
+    ├── .gitignore              # מחריג את .env, .venv ו-__pycache__
+    ├── .env                    # GEMINI_API_KEY, PORT (לא נכנס ל-git)
+    └── .claude/skills/         # הנחיות ל-Claude: ai-specialist, fastapi-arch
+```
+
+> **שימו לב:** צד הלקוח וצד השרת נמצאים באותו ריפו. בפריסה מגדירים ב-Render את `server-phishGuard` כ-Root Directory של השירות.
+
+---
+
+## ה-API
+
+### `GET /`
+בדיקת תקינות. מחזיר:
+```json
+{ "message": "PhishGuard API is running" }
+```
+
+### `POST /api/analyze`
+ניתוח תמונה.
+
+**בקשה** (`multipart/form-data`):
+
+| שדה | סוג | חובה | תיאור |
+|------|------|-------|--------|
+| `file` | קובץ | כן | התמונה לניתוח |
+| `language` | string | לא (ברירת מחדל `en`) | שפת התשובה, `en` או `he` |
+
+**תשובה** (`200 OK`):
+```json
+{
+  "score": 8,
+  "verdict": "Phishing",
+  "red_flags": [
+    "Sender domain does not match the brand",
+    "Urgent language: 'Your account will be suspended in 24 hours'"
+  ],
+  "recommendation": "Do not click the link. Delete the message and report it."
+}
+```
+
+| שדה | משמעות |
+|------|---------|
+| `score` | מספר שלם 1–10 (1 = בטוח לגמרי, 10 = פישינג ודאי) |
+| `verdict` | `Safe` (1–3), `Suspicious` (4–7) או `Phishing` (8–10), בשפה שנבחרה |
+| `red_flags` | רשימת הסימנים המחשידים (יכולה להיות ריקה) |
+| `recommendation` | המלצה מעשית למשתמש |
+
+**קודי שגיאה:**
+
+| קוד | מתי |
+|-----|------|
+| `400` | הקובץ שהועלה ריק |
+| `422` | חסר השדה `file` (ולידציה של FastAPI) |
+| `502` | הקריאה ל-Gemini נכשלה, או שהתשובה לא הייתה JSON תקין / במבנה הצפוי |
+| `503` | `GEMINI_API_KEY` לא מוגדר בשרת |
+
+---
+
+## צד הלקוח: איך זה עובד
+
+### זרימת המצבים ב-`ImageUploader`
+
+```
+IDLE ──(בחירת קובץ)──▶ UPLOADING ──(FileReader סיים)──▶ SCANNING ──┬─▶ RESULT
+                                                                   └─▶ ERROR
+            ▲                                                       │
+            └──────────────────────(Cancel)─────────────────────────┘
+```
+
+1. **IDLE**: אזור ה-Drag & Drop ממתין לקובץ.
+2. **UPLOADING**: הקובץ נבדק (PNG/JPG/JPEG בלבד) ונקרא כ-Data URL לתצוגה מקדימה.
+3. **SCANNING**: מוצגים שכבה כהה, קו סריקה מונפש והודעות שמתחלפות כל 1.5 שניות. במקביל נשלחת בקשה אחת ל-`/api/analyze` יחד עם השפה הנוכחית. `Cancel` מבטל את הבקשה עצמה (`AbortController`), ובחירת קובץ חדש מבטלת סריקה שעדיין רצה.
+4. **RESULT / ERROR**: התוצאה מועברת ל-`App` דרך `onScanComplete`. בשגיאה מוצגת הודעה מתורגמת.
+
+### `AnalysisResults`
+- `SemiCircleGauge` הוא מד SVG בצורת חצי עיגול. הצבע נקבע לפי הציון: עד 3 ירוק, עד 6 צהוב, מעל 6 אדום.
+- הקומפוננטה גוללת את עצמה למרכז המסך כשהיא מופיעה.
+- `red_flags` מוצגים ככרטיסי אזהרה אדומים, וההמלצה מוצגת בתיבה נפרדת.
+
+### Contexts
+- **`ThemeContext`**: מוסיף או מסיר את המחלקה `dark` על `<html>` ושומר את הבחירה ב-`localStorage`.
+- **`LanguageContext`**: מחזיק מילון תרגומים ל-`en` ול-`he` ופונקציית `t(key)`, מעדכן את `document.documentElement.dir` ושומר את הבחירה ב-`localStorage`.
+
+---
+
+## צד השרת: איך זה עובד
+
+- **`main.py`**: יוצר את אפליקציית FastAPI, מגדיר CORS ומריץ Uvicorn על הפורט מ-`PORT` (ברירת מחדל 8000), כדי שיתאים לפריסה ב-Render.
+- **עיבוד ללא שמירה (Ephemeral)**: התמונה נקראת עם `await file.read()` ישירות לזיכרון ולא נכתבת לדיסק.
+- **`GeminiService`**:
+  - מודל: `gemini-2.5-flash-lite`.
+  - הקריאה ל-Gemini אסינכרונית (`client.aio`), כך שהשרת מטפל בכמה סריקות במקביל.
+  - `temperature=0.1` ו-`response_mime_type="application/json"`, כך שהמודל מחזיר JSON.
+  - הפרומפט מגדיר מסגרת ניתוח (ויזואלי וטקסטואלי), פורמט פלט קשיח, טווחי ציון לכל הכרעה, והוראה לכתוב את הערכים בשפה המבוקשת בזמן שהמפתחות נשארים באנגלית.
+  - התשובה מפוענחת ועוברת ולידציה מול `AnalysisResponse`. לשדות חסרים יש ערכי ברירת מחדל (ציון 5, `Suspicious`).
+
+---
+
+## הרצה מקומית
+
+### דרישות
+- Node.js (גרסה שתומכת ב-Vite 7)
+- Python 3.13
+- מפתח API של Google Gemini
+
+### 1. צד השרת
+
+```powershell
+cd server-phishGuard
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+יוצרים קובץ `server-phishGuard/.env`:
+```env
+GEMINI_API_KEY=your-gemini-api-key
+PORT=8000
+```
+הערה: אם `GEMINI_API_KEY` מוגדר גם במשתני הסביבה של Windows, הערך שם גובר על `.env`.
+
+מריצים:
+```powershell
+python main.py
+```
+השרת יעלה בכתובת `http://localhost:8000`. תיעוד אינטראקטיבי זמין ב-`http://localhost:8000/docs`.
+
+אפשר לבדוק שהמפתח עובד ולראות אילו מודלים זמינים:
+```powershell
+python check.py
+```
+
+### 2. צד הלקוח
+
+בתיקיית השורש יוצרים `.env.local`:
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+(אם המשתנה לא מוגדר, ברירת המחדל היא `http://localhost:8000`.)
+
+```powershell
+npm install
+npm run dev
+```
+האפליקציה תעלה בכתובת `http://localhost:5173`.
+
+### סקריפטים של צד הלקוח
+
+| פקודה | תיאור |
+|--------|--------|
+| `npm run dev` | שרת פיתוח עם HMR |
+| `npm run build` | בנייה לפרודקשן לתיקיית `dist/` |
+| `npm run preview` | הרצה מקומית של ה-build |
+| `npm run lint` | ESLint |
+
+---
+
+## פריסה
+
+הקוד מוכן לתצורה הבאה:
+- **צד שרת ב-Render**: הפורט נקרא מ-`PORT`, והשרת מאזין על `0.0.0.0`.
+- **צד לקוח ב-Netlify**: מגדירים `VITE_API_BASE_URL` לכתובת השרת ב-Render. ה-CORS מאפשר כל כתובת מהצורה `https://<name>.netlify.app` (דרך `allow_origin_regex`). כדי לנעול את השרת לאתר אחד בלבד, מחליפים את ה-regex בכתובת המלאה של האתר.
+
+---
+
+## בעיות ידועות ונקודות לשיפור
+
+1. **ספי הצבע לא תואמים לספי ההכרעה.** במד, ציון 7 מוצג באדום, אבל לפי הפרומפט 4–7 הם `Suspicious`.
+2. **אין ולידציה בצד השרת.** סוג הקובץ וגודלו נבדקים רק בצד הלקוח. השרת קורא לזיכרון קובץ בכל גודל ובכל סוג.
+3. **שאריות ותיעוד לא מעודכן:**
+   - ה-docstrings ב-`main.py` וב-`gemini_service.py` מזכירים את Gemini 1.5 Flash, אבל בפועל נעשה שימוש ב-`gemini-2.5-flash-lite`.
+   - `src/App.css` ו-`src/assets/react.svg` הם שאריות של תבנית Vite ולא בשימוש.
+   - ב-`index.html` הכותרת היא `cli-phishguard` והאייקון הוא הלוגו של Vite.
+   - בתרגום לעברית של `analyzingBranding` יש תו `x` מיותר.
+   - מפתחות התרגום `safe`, `suspicious`, `phishing` ו-`critical` לא בשימוש, כי ההכרעה מגיעה מהשרת כבר מתורגמת.

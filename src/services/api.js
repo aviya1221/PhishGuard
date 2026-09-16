@@ -23,12 +23,14 @@ class ApiService {
     return response.json();
   }
 
-  async uploadFile(endpoint, file) {
+  async uploadFile(endpoint, file, language = 'en', signal) {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('language', language);
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       body: formData,
+      signal,
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
