@@ -54,17 +54,24 @@ Return ONLY a valid JSON object with NO additional text, explanation, or markdow
 You must write the values for 'verdict', 'red_flags', and 'recommendation' strictly in the following language: {language}. However, the JSON keys MUST remain exactly in English as defined in the schema."""
 
 
+# Supported language codes mapped to the language name given to the model
+SUPPORTED_LANGUAGES = {
+    "en": "English",
+    "he": "Hebrew",
+}
+
+
 def get_phishing_detection_prompt(language: str = "en") -> str:
     """
     Generate a phishing detection prompt with language specification.
-    
+
     Args:
-        language: Language code (e.g., "en", "he", "es", "fr")
-    
+        language: Language code, one of SUPPORTED_LANGUAGES (e.g., "en", "he")
+
     Returns:
-        System prompt with language injection
+        System prompt with the language name injected (falls back to English)
     """
-    return PHISHING_DETECTION_PROMPT_BASE.format(language=language)
+    return PHISHING_DETECTION_PROMPT_BASE.format(language=SUPPORTED_LANGUAGES.get(language, "English"))
 
 
 class GeminiService:
@@ -91,7 +98,7 @@ class GeminiService:
         language: str = "en"
     ) -> AnalysisResponse:
         """
-        Analyze an image for phishing indicators using Gemini 1.5 Flash.
+        Analyze an image for phishing indicators using Gemini 2.5 Flash-Lite.
 
         Args:
             file_content: Image file content as bytes

@@ -3,6 +3,9 @@ import api from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const SCAN_MESSAGE_KEYS = ['analyzingBranding', 'checkingUrls', 'evaluatingTone'];
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // Must match MAX_UPLOAD_BYTES on the server
+// Translation keys for HTTP errors the server returns on purpose
+const ERROR_MESSAGE_KEYS = { 413: 'fileTooLarge', 415: 'invalidFileType', 429: 'tooManyRequests' };
 
 const ImageUploader = ({ onFileSelect, onScanComplete }) => {
   const { t, language } = useLanguage();
@@ -10,6 +13,7 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
   const [preview, setPreview] = useState(null);
   const [uploadState, setUploadState] = useState('IDLE'); // IDLE, UPLOADING, SCANNING, RESULT, ERROR
   const [scanIndex, setScanIndex] = useState(0);
+  const [errorKey, setErrorKey] = useState('analysisFailed');
   const fileInputRef = useRef(null);
   const abortRef = useRef(null);
 
@@ -51,6 +55,7 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
       .catch((error) => {
         if (error.name === 'AbortError') return;
         console.error('API Error:', error);
+        setErrorKey(ERROR_MESSAGE_KEYS[error.status] || 'analysisFailed');
         setUploadState('ERROR');
       })
       .finally(() => {
@@ -80,7 +85,11 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
   const handleFile = (file) => {
     const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Please upload a PNG, JPG, or JPEG file.');
+      alert(t('invalidFileType'));
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      alert(t('fileTooLarge'));
       return;
     }
 
@@ -154,7 +163,7 @@ const ImageUploader = ({ onFileSelect, onScanComplete }) => {
               )}
             </div>
             {uploadState === 'ERROR' ? (
-              <p className="text-red-600 text-sm">{t('analysisFailed')}</p>
+              <p className="text-red-600 text-sm">{t(errorKey)}</p>
             ) : (
               <p className="text-slate-600 dark:text-slate-400">{t('clickDifferent')}</p>
             )}

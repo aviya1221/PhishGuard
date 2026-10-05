@@ -28,6 +28,9 @@ const translations = {
     phishing: 'Phishing',
     critical: 'Critical Phishing',
     analysisFailed: 'Analysis failed. Please try again or check your connection.',
+    invalidFileType: 'Please upload a PNG, JPG, or JPEG file.',
+    fileTooLarge: 'The file is too large. Maximum size is 10 MB.',
+    tooManyRequests: 'Too many scans in a short time. Please wait a minute and try again.',
     cancel: 'Cancel'
   },
   he: {
@@ -38,7 +41,7 @@ const translations = {
     supports: 'תומך בקבצים מסוג- PNG, JPG, JPEG',
     uploading: 'מעלה...',
     scanning: 'סורק...',
-    analyzingBranding: 'מחפש זיופים ויזואלייםx...',
+    analyzingBranding: 'מחפש זיופים ויזואליים...',
     checkingUrls: 'סורק קישורים חשודים...',
     evaluatingTone: 'סורק מניפולציות בטקסט...',
     clickDifferent: 'לחץ כדי להעלות תמונה אחרת',
@@ -53,6 +56,9 @@ const translations = {
     phishing: 'הונאה',
     critical: 'פישינג קריטי',
     analysisFailed: 'הניתוח נכשל. אנא נסה שוב או בדוק את החיבור שלך.',
+    invalidFileType: 'יש להעלות קובץ מסוג PNG, JPG או JPEG.',
+    fileTooLarge: 'הקובץ גדול מדי. הגודל המקסימלי הוא 10MB.',
+    tooManyRequests: 'בוצעו יותר מדי סריקות בזמן קצר. אנא המתן דקה ונסה שוב.',
     cancel: 'ביטול'
   }
 };
