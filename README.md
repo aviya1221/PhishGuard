@@ -1,32 +1,34 @@
 # PhishGuard AI
 
-PhishGuard AI היא אפליקציית ווב שמזהה ניסיונות פישינג מתוך צילומי מסך.
-המשתמש מעלה תמונה (למשל צילום של מייל, SMS או דף התחברות), והמערכת שולחת אותה למודל ראייה של Google Gemini. המודל מחזיר ציון סיכון, הכרעה, רשימת סימנים מחשידים והמלצה מה לעשות.
+PhishGuard AI is a web app that detects phishing attempts from screenshots.
+The user uploads an image (for example a screenshot of an email, an SMS or a login page), and the system sends it to a Google Gemini vision model. The model returns a risk score, a verdict, a list of red flags and a recommendation on what to do.
 
-הפרויקט בנוי משני חלקים:
+**Live demo:** https://phishguardac.netlify.app
 
-| חלק | תיקייה | טכנולוגיה |
-|------|---------|------------|
-| צד לקוח (Frontend) | תיקיית השורש (`src/`) | React 19 + Vite 7 + Tailwind CSS 3 |
-| צד שרת (Backend) | `server-phishGuard/` | Python 3.13 + FastAPI + Google GenAI SDK |
+The project has two parts:
 
----
-
-## יכולות עיקריות
-
-- **העלאת תמונה ב-Drag & Drop** או בלחיצה, עם תצוגה מקדימה. נתמכים קבצי PNG, JPG ו-JPEG.
-- **אנימציית סריקה**: קו "לייזר" שעובר על התמונה, והודעות סטטוס מתחלפות ("Analyzing Branding...", "Checking URLs...", "Evaluating Tone...").
-- **ניתוח AI כפול**:
-  - *ניתוח ויזואלי*: לוגו, פונטים וצבעים שלא תואמים למותג, מבנה טפסים חשוד, מחוון אבטחה חסר.
-  - *ניתוח טקסטואלי*: הנדסה חברתית, שפה דחופה, איומים, שגיאות כתיב, דומיינים וכתובות מייל חשודים.
-- **דוח תוצאות**: מד חצי-עיגול עם ציון 1–10 בצבעים (ירוק, צהוב, אדום), ההכרעה, רשימת הסימנים המחשידים והמלצה.
-- **דו-לשוניות**: אנגלית ועברית, כולל מעבר ל-RTL. השפה נשלחת גם לשרת, כך שהמודל עונה בשפה שנבחרה.
-- **מצב כהה/בהיר**: הבחירה נשמרת ב-`localStorage`.
-- **פרטיות**: הודעה שמבקשת מהמשתמש לחתוך מידע אישי לפני ההעלאה. בשרת התמונה מעובדת בזיכרון בלבד ולא נשמרת לדיסק.
+| Part | Folder | Stack |
+|------|--------|-------|
+| Frontend | repo root (`src/`) | React 19 + Vite 7 + Tailwind CSS 3 |
+| Backend | `server-phishGuard/` | Python 3.13 + FastAPI + Google GenAI SDK |
 
 ---
 
-## ארכיטקטורה
+## Features
+
+- **Drag & drop image upload** or click to browse, with a preview. Supports PNG, JPG and JPEG.
+- **Scan animation**: a "laser" line sweeps over the image while status messages rotate ("Analyzing Branding...", "Checking URLs...", "Evaluating Tone...").
+- **Two-layer AI analysis**:
+  - *Visual analysis*: logos, fonts and colors that don't match the brand, suspicious form layouts, missing security indicators.
+  - *Text analysis*: social engineering, urgent language, threats, spelling mistakes, suspicious domains and email addresses.
+- **Results report**: a semicircle gauge with a 1–10 score in color (green, yellow, red), the verdict, the list of red flags and a recommendation.
+- **Bilingual**: English and Hebrew, including RTL layout. The language is also sent to the server, so the model answers in the selected language.
+- **Dark/light mode**: the choice is saved in `localStorage`.
+- **Privacy**: a notice asks the user to crop out personal information before uploading. On the server, the image is processed in memory only and never written to disk.
+
+---
+
+## Architecture
 
 ```mermaid
 sequenceDiagram
@@ -46,9 +48,16 @@ sequenceDiagram
     UI->>User: Gauge + verdict + red flags + recommendation
 ```
 
+In production the frontend is served by Netlify and the backend runs on Render. The browser talks to the Render server directly:
+
+```
+Browser  →  Netlify   (index.html, JS, CSS)
+Browser  →  Render    (POST /api/analyze)  →  Gemini
+```
+
 ---
 
-## מבנה הפרויקט
+## Project Structure
 
 ```
 cli-phishGuard/
@@ -58,59 +67,63 @@ cli-phishGuard/
 ├── tailwind.config.js          # darkMode: 'class'
 ├── postcss.config.js
 ├── eslint.config.js
-├── .env.local                  # VITE_API_BASE_URL (לא נכנס ל-git)
-├── .claude/skills/             # הנחיות ל-Claude: interaction, secure-arch, visualizer
+├── render.yaml                 # Render Blueprint for the backend
+├── .env.production             # VITE_API_BASE_URL for production builds (the Render URL)
+├── .env.local                  # VITE_API_BASE_URL for local dev (not committed)
+├── .claude/skills/             # Claude instructions: interaction, secure-arch, visualizer
+├── public/
+│   └── favicon.svg             # Shield-and-hook icon
 ├── src/
-│   ├── main.jsx                # נקודת הכניסה
-│   ├── App.jsx                 # עוטף ב-ThemeProvider ו-LanguageProvider ומחזיק את התוצאה
-│   ├── index.css               # Tailwind + אנימציית scan-line
+│   ├── main.jsx                # Entry point
+│   ├── App.jsx                 # Wraps ThemeProvider and LanguageProvider and holds the result
+│   ├── index.css               # Tailwind + scan-line animation
 │   ├── components/
-│   │   ├── Header.jsx          # כותרת, כפתור מצב כהה וכפתור שפה
-│   │   ├── ImageUploader.jsx   # Drag & Drop, תצוגה מקדימה, סריקה וקריאה ל-API
-│   │   └── AnalysisResults.jsx # מד הציון והדוח
+│   │   ├── Header.jsx          # Title, dark mode toggle and language toggle
+│   │   ├── ImageUploader.jsx   # Drag & drop, preview, scan and API call
+│   │   └── AnalysisResults.jsx # Score gauge and report
 │   ├── contexts/
-│   │   ├── ThemeContext.jsx    # מצב כהה/בהיר
-│   │   └── LanguageContext.jsx # תרגומים (en/he), כיוון RTL/LTR
+│   │   ├── ThemeContext.jsx    # Dark/light mode
+│   │   └── LanguageContext.jsx # Translations (en/he), RTL/LTR direction
 │   └── services/
-│       └── api.js              # עטיפה ל-fetch (get, post, uploadFile)
+│       └── api.js              # fetch wrapper (get, post, uploadFile)
 │
-└── server-phishGuard/          # צד השרת (באותו ריפו)
-    ├── main.py                 # אפליקציית FastAPI, CORS, endpoints
+└── server-phishGuard/          # Backend (same repo)
+    ├── main.py                 # FastAPI app, CORS, endpoints
     ├── models/schemas.py       # AnalysisResponse (Pydantic)
-    ├── services/gemini_service.py  # הפרומפט, הקריאה ל-Gemini ופענוח התשובה
-    ├── services/rate_limiter.py    # הגבלת קצב בזיכרון (חלון זמן נע)
-    ├── check.py                # סקריפט עזר: מדפיס את המודלים הזמינים ב-Gemini
+    ├── services/gemini_service.py  # Prompt, Gemini call and response parsing
+    ├── services/rate_limiter.py    # In-memory sliding-window rate limiter
+    ├── check.py                # Helper script: prints the models available in Gemini
     ├── requirements.txt
-    ├── .gitignore              # מחריג את .env, .venv ו-__pycache__
-    ├── .env                    # GEMINI_API_KEY, PORT (לא נכנס ל-git)
-    └── .claude/skills/         # הנחיות ל-Claude: ai-specialist, fastapi-arch
+    ├── .gitignore              # Excludes .env, .venv and __pycache__
+    ├── .env                    # GEMINI_API_KEY, PORT (not committed)
+    └── .claude/skills/         # Claude instructions: ai-specialist, fastapi-arch
 ```
 
-> **שימו לב:** צד הלקוח וצד השרת נמצאים באותו ריפו. בפריסה מגדירים ב-Render את `server-phishGuard` כ-Root Directory של השירות.
+> **Note:** the frontend and backend live in the same repo. `render.yaml` sets `server-phishGuard` as the Render service's root directory.
 
 ---
 
-## ה-API
+## API
 
 ### `GET /`
-בדיקת תקינות. מחזיר:
+Health check. Returns:
 ```json
 { "message": "PhishGuard API is running" }
 ```
 
 ### `POST /api/analyze`
-ניתוח תמונה.
+Analyzes an image.
 
-**בקשה** (`multipart/form-data`):
+**Request** (`multipart/form-data`):
 
-| שדה | סוג | חובה | תיאור |
-|------|------|-------|--------|
-| `file` | קובץ | כן | התמונה לניתוח: PNG או JPEG, עד 10MB. הסוג נבדק לפי תוכן הקובץ (magic bytes), לא לפי ה-Content-Type |
-| `language` | string | לא (ברירת מחדל `en`) | שפת התשובה, `en` או `he` |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | file | yes | The image to analyze: PNG or JPEG, up to 10 MB. The type is checked by the file's content (magic bytes), not by its Content-Type |
+| `language` | string | no (default `en`) | Response language, `en` or `he` |
 
-**הגבלת קצב:** עד 10 סריקות בדקה לכל כתובת IP, ועד 30 סריקות בדקה לכל השרת. המגבלות נשמרות בזיכרון, כך שהן חלות על כל מופע של השרת בנפרד ומתאפסות בהפעלה מחדש.
+**Rate limits:** up to 10 scans per minute per IP address, and up to 30 scans per minute for the whole server. The limits are kept in memory, so they apply to each server instance separately and reset on restart.
 
-**תשובה** (`200 OK`):
+**Response** (`200 OK`):
 ```json
 {
   "score": 8,
@@ -123,78 +136,79 @@ cli-phishGuard/
 }
 ```
 
-| שדה | משמעות |
-|------|---------|
-| `score` | מספר שלם 1–10 (1 = בטוח לגמרי, 10 = פישינג ודאי) |
-| `verdict` | `Safe` (1–3), `Suspicious` (4–7) או `Phishing` (8–10), בשפה שנבחרה |
-| `red_flags` | רשימת הסימנים המחשידים (יכולה להיות ריקה) |
-| `recommendation` | המלצה מעשית למשתמש |
+| Field | Meaning |
+|-------|---------|
+| `score` | Integer 1–10 (1 = definitely safe, 10 = definitely phishing) |
+| `verdict` | `Safe` (1–3), `Suspicious` (4–7) or `Phishing` (8–10). Always in English, whatever the language; the client translates it |
+| `red_flags` | List of red flags (may be empty), in the selected language |
+| `recommendation` | Actionable advice for the user, in the selected language |
 
-**קודי שגיאה:**
+**Error codes:**
 
-| קוד | מתי |
-|-----|------|
-| `400` | הקובץ שהועלה ריק, או ש-`language` אינו `en`/`he` |
-| `411` | חסרה כותרת `Content-Length` |
-| `413` | הקובץ גדול מ-10MB |
-| `415` | הקובץ אינו PNG או JPEG |
-| `422` | חסר השדה `file` (ולידציה של FastAPI) |
-| `429` | חריגה מהגבלת הקצב (עם `Retry-After: 60`) |
-| `502` | הקריאה ל-Gemini נכשלה, או שהתשובה לא הייתה JSON תקין / במבנה הצפוי |
-| `503` | `GEMINI_API_KEY` לא מוגדר בשרת |
+| Code | When |
+|------|------|
+| `400` | The uploaded file is empty, or `language` is not `en`/`he` |
+| `411` | The `Content-Length` header is missing |
+| `413` | The file is larger than 10 MB |
+| `415` | The file is not a PNG or JPEG |
+| `422` | The `file` field is missing (FastAPI validation) |
+| `429` | Rate limit exceeded (with `Retry-After: 60`) |
+| `502` | The Gemini call failed, or the response was not valid JSON / not in the expected shape |
+| `503` | `GEMINI_API_KEY` is not set on the server |
 
 ---
 
-## צד הלקוח: איך זה עובד
+## Frontend: How It Works
 
-### זרימת המצבים ב-`ImageUploader`
+### State flow in `ImageUploader`
 
 ```
-IDLE ──(בחירת קובץ)──▶ UPLOADING ──(FileReader סיים)──▶ SCANNING ──┬─▶ RESULT
-                                                                   └─▶ ERROR
-            ▲                                                       │
-            └──────────────────────(Cancel)─────────────────────────┘
+IDLE ──(file chosen)──▶ UPLOADING ──(FileReader done)──▶ SCANNING ──┬─▶ RESULT
+                                                                    └─▶ ERROR
+            ▲                                                        │
+            └──────────────────────(Cancel)──────────────────────────┘
 ```
 
-1. **IDLE**: אזור ה-Drag & Drop ממתין לקובץ.
-2. **UPLOADING**: הקובץ נבדק (PNG/JPG/JPEG בלבד, עד 10MB) ונקרא כ-Data URL לתצוגה מקדימה.
-3. **SCANNING**: מוצגים שכבה כהה, קו סריקה מונפש והודעות שמתחלפות כל 1.5 שניות. במקביל נשלחת בקשה אחת ל-`/api/analyze` יחד עם השפה הנוכחית. `Cancel` מבטל את הבקשה עצמה (`AbortController`), ובחירת קובץ חדש מבטלת סריקה שעדיין רצה.
-4. **RESULT / ERROR**: התוצאה מועברת ל-`App` דרך `onScanComplete`. בשגיאה מוצגת הודעה מתורגמת לפי קוד השגיאה: 413 (קובץ גדול מדי), 415 (סוג קובץ לא נתמך), 429 (יותר מדי סריקות), והודעה כללית בכל מקרה אחר.
+1. **IDLE**: the drag & drop area waits for a file.
+2. **UPLOADING**: the file is validated (PNG/JPG/JPEG only, up to 10 MB) and read as a Data URL for the preview.
+3. **SCANNING**: a dark overlay, an animated scan line and messages that rotate every 1.5 seconds are shown. At the same time a single request is sent to `/api/analyze` with the current language. `Cancel` aborts the request itself (`AbortController`), and choosing a new file cancels a scan that is still running.
+4. **RESULT / ERROR**: the result is passed to `App` through `onScanComplete`. On error, a translated message is shown based on the status code: 413 (file too large), 415 (unsupported file type), 429 (too many scans), and a generic message otherwise.
 
 ### `AnalysisResults`
-- `SemiCircleGauge` הוא מד SVG בצורת חצי עיגול. הצבע נקבע לפי הציון: עד 3 ירוק, עד 6 צהוב, מעל 6 אדום.
-- הקומפוננטה גוללת את עצמה למרכז המסך כשהיא מופיעה.
-- `red_flags` מוצגים ככרטיסי אזהרה אדומים, וההמלצה מוצגת בתיבה נפרדת.
+- `SemiCircleGauge` is a semicircle SVG gauge. Its color depends on the score: up to 3 green, up to 6 yellow, above 6 red.
+- The verdict is shown through `t(verdict.toLowerCase())`, so it appears in the selected language.
+- The component scrolls itself to the center of the screen when it appears.
+- `red_flags` are shown as red warning cards, and the recommendation is shown in a separate box.
 
 ### Contexts
-- **`ThemeContext`**: מוסיף או מסיר את המחלקה `dark` על `<html>` ושומר את הבחירה ב-`localStorage`.
-- **`LanguageContext`**: מחזיק מילון תרגומים ל-`en` ול-`he` ופונקציית `t(key)`, מעדכן את `document.documentElement.dir` ושומר את הבחירה ב-`localStorage`.
+- **`ThemeContext`**: adds or removes the `dark` class on `<html>` and saves the choice in `localStorage`.
+- **`LanguageContext`**: holds the `en` and `he` translation dictionaries and a `t(key)` function, updates `document.documentElement.dir` and saves the choice in `localStorage`.
 
 ---
 
-## צד השרת: איך זה עובד
+## Backend: How It Works
 
-- **`main.py`**: יוצר את אפליקציית FastAPI, מגדיר CORS ומריץ Uvicorn על הפורט מ-`PORT` (ברירת מחדל 8000), כדי שיתאים לפריסה ב-Render.
-- **עיבוד ללא שמירה (Ephemeral)**: התמונה נקראת עם `await file.read()` ישירות לזיכרון ולא נכתבת לדיסק. כברירת מחדל Starlette כותב קבצים מעל 1MB לקובץ זמני בדיסק, ולכן `MultiPartParser.spool_max_size` מוגדר מעל מגבלת ההעלאה.
-- **שכבת הגנה (`guard_analyze_requests`)**: middleware שבודק את `Content-Length` ואת הגבלת הקצב עוד לפני שגוף הבקשה נקרא. הוא רשום לפני `CORSMiddleware`, כדי שגם תשובות 411/413/429 יכללו כותרות CORS והדפדפן יראה את קוד השגיאה האמיתי.
-- **`RateLimiter`** (`services/rate_limiter.py`): חלון זמן נע בזיכרון. קודם נבדקת המגבלה לכל IP ורק אחר כך המגבלה הכללית, כדי שלקוח אחד לא ינצל את כל התקציב המשותף.
+- **`main.py`**: creates the FastAPI app, configures CORS and runs Uvicorn on the port from `PORT` (default 8000), so it fits deployment on Render.
+- **Ephemeral processing**: the image is read with `await file.read()` straight into memory and never written to disk. By default Starlette spools files over 1 MB to a temporary file on disk, so `MultiPartParser.spool_max_size` is set above the upload limit.
+- **Request guard (`guard_analyze_requests`)**: a middleware that checks `Content-Length` and the rate limit before the request body is read. It is registered before `CORSMiddleware`, so 411/413/429 responses also carry CORS headers and the browser sees the real status code.
+- **`RateLimiter`** (`services/rate_limiter.py`): an in-memory sliding window. The per-IP limit is checked first and only then the global limit, so a single client can't use up the shared budget.
 - **`GeminiService`**:
-  - מודל: `gemini-3.5-flash-lite`.
-  - הקריאה ל-Gemini אסינכרונית (`client.aio`), כך שהשרת מטפל בכמה סריקות במקביל.
-  - `temperature=0.1` ו-`response_mime_type="application/json"`, כך שהמודל מחזיר JSON.
-  - הפרומפט מגדיר מסגרת ניתוח (ויזואלי וטקסטואלי), פורמט פלט קשיח, טווחי ציון לכל הכרעה, והוראה לכתוב את הערכים בשפה המבוקשת בזמן שהמפתחות נשארים באנגלית.
-  - התשובה מפוענחת ועוברת ולידציה מול `AnalysisResponse`. לשדות חסרים יש ערכי ברירת מחדל (ציון 5, `Suspicious`).
+  - Model: `gemini-3.5-flash-lite`.
+  - The Gemini call is async (`client.aio`), so the server handles several scans in parallel.
+  - `temperature=0.1` and `response_mime_type="application/json"`, so the model returns JSON.
+  - The prompt defines an analysis framework (visual and textual), a strict output format, score ranges for each verdict, and an instruction to write `red_flags` and `recommendation` in the requested language while the keys and the verdict stay in English.
+  - The response is parsed and validated against `AnalysisResponse`. Missing fields get default values (score 5, `Suspicious`).
 
 ---
 
-## הרצה מקומית
+## Running Locally
 
-### דרישות
-- Node.js (גרסה שתומכת ב-Vite 7)
+### Requirements
+- Node.js (a version supported by Vite 7)
 - Python 3.13
-- מפתח API של Google Gemini
+- A Google Gemini API key
 
-### 1. צד השרת
+### 1. Backend
 
 ```powershell
 cd server-phishGuard
@@ -203,61 +217,68 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-יוצרים קובץ `server-phishGuard/.env`:
+Create `server-phishGuard/.env`:
 ```env
 GEMINI_API_KEY=your-gemini-api-key
 PORT=8000
 ```
-הערה: אם `GEMINI_API_KEY` מוגדר גם במשתני הסביבה של Windows, הערך שם גובר על `.env`.
+Note: if `GEMINI_API_KEY` is also set as a Windows environment variable, that value wins over `.env`.
 
-מריצים:
+Run:
 ```powershell
 python main.py
 ```
-השרת יעלה בכתובת `http://localhost:8000`. תיעוד אינטראקטיבי זמין ב-`http://localhost:8000/docs`.
+The server starts at `http://localhost:8000`. Interactive docs are available at `http://localhost:8000/docs`.
 
-אפשר לבדוק שהמפתח עובד ולראות אילו מודלים זמינים:
+To check that the key works and see which models are available:
 ```powershell
 python check.py
 ```
 
-### 2. צד הלקוח
+### 2. Frontend
 
-בתיקיית השורש יוצרים `.env.local`:
+In the repo root, create `.env.local`:
 ```env
 VITE_API_BASE_URL=http://localhost:8000
 ```
-(אם המשתנה לא מוגדר, ברירת המחדל היא `http://localhost:8000`.)
+(If the variable is not set, the default is `http://localhost:8000`.)
 
 ```powershell
 npm install
 npm run dev
 ```
-האפליקציה תעלה בכתובת `http://localhost:5173`.
+The app starts at `http://localhost:5173`.
 
-### סקריפטים של צד הלקוח
+### Frontend scripts
 
-| פקודה | תיאור |
-|--------|--------|
-| `npm run dev` | שרת פיתוח עם HMR |
-| `npm run build` | בנייה לפרודקשן לתיקיית `dist/` |
-| `npm run preview` | הרצה מקומית של ה-build |
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server with HMR |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Serve the build locally |
 | `npm run lint` | ESLint |
 
 ---
 
-## פריסה
+## Deployment
 
-הקוד מוכן לתצורה הבאה:
-- **צד שרת ב-Render**: הפורט נקרא מ-`PORT`, והשרת מאזין על `0.0.0.0`. פקודת ההפעלה היא `python main.py`, שמגדירה `forwarded_allow_ips="*"` כדי שהגבלת הקצב תראה את כתובת ה-IP האמיתית של המשתמש מאחורי ה-proxy של Render. אם מפעילים עם `uvicorn main:app` צריך להוסיף `--forwarded-allow-ips="*"`, אחרת כל המשתמשים ייראו כמו IP אחד. כתובת ה-IP הזו נלקחת מ-`X-Forwarded-For` ולכן אפשר לזייף אותה. המגבלה הכללית היא ההגנה במקרה כזה, ומומלץ להגדיר גם מכסה למפתח ב-Google AI Studio.
-- **צד לקוח ב-Netlify**: מגדירים `VITE_API_BASE_URL` לכתובת השרת ב-Render. ה-CORS מאפשר כל כתובת מהצורה `https://<name>.netlify.app` (דרך `allow_origin_regex`). כדי לנעול את השרת לאתר אחד בלבד, מחליפים את ה-regex בכתובת המלאה של האתר.
+Every push to GitHub redeploys both parts automatically.
+
+### Backend on Render
+- Created from `render.yaml` as a Blueprint (**New → Blueprint** in the Render dashboard). The file sets the root directory, the build command and the start command, and asks for `GEMINI_API_KEY` in the dashboard so the key never goes into the repo.
+- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT --forwarded-allow-ips="*"`. The `--forwarded-allow-ips` flag lets the rate limiter see the user's real IP behind Render's proxy; without it every user would look like one IP. That IP comes from `X-Forwarded-For` and can be spoofed, so the global limit is the safeguard in that case. Setting a quota on the key in Google AI Studio is also recommended.
+- On the free plan the service sleeps after 15 minutes without traffic, so the first scan after that can take up to a minute.
+
+### Frontend on Netlify
+- The site is imported from the GitHub repo. Build command `npm run build`, publish directory `dist`.
+- The Render URL is set in `.env.production`. Vite bakes it into the JS bundle at build time, and it takes priority over `.env.local` in production builds.
+- CORS allows any origin of the form `https://<name>.netlify.app` (through `allow_origin_regex`). To lock the server to a single site, replace the regex with the site's full URL.
 
 ---
 
-## בעיות ידועות ונקודות לשיפור
+## Known Issues and Improvements
 
-1. **ספי הצבע לא תואמים לספי ההכרעה.** במד, ציון 7 מוצג באדום, אבל לפי הפרומפט 4–7 הם `Suspicious`.
-2. **שאריות ותיעוד לא מעודכן:**
-   - `src/App.css` ו-`src/assets/react.svg` הם שאריות של תבנית Vite ולא בשימוש.
-   - ב-`index.html` האייקון הוא עדיין הלוגו של Vite.
-   - מפתחות התרגום `safe`, `suspicious`, `phishing` ו-`critical` לא בשימוש, כי ההכרעה מגיעה מהשרת כבר מתורגמת.
+1. **The color thresholds don't match the verdict thresholds.** On the gauge, a score of 7 is shown in red, but according to the prompt 4–7 is `Suspicious`.
+2. **Leftovers:**
+   - `src/App.css` and `src/assets/react.svg` are leftovers from the Vite template and are not used.
+   - The `critical` translation key is not used.
