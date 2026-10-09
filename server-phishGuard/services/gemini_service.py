@@ -98,7 +98,7 @@ class GeminiService:
         language: str = "en"
     ) -> AnalysisResponse:
         """
-        Analyze an image for phishing indicators using Gemini 2.5 Flash-Lite.
+        Analyze an image for phishing indicators using Gemini 3.5 Flash-Lite.
 
         Args:
             file_content: Image file content as bytes
@@ -127,7 +127,7 @@ class GeminiService:
             # Call Gemini model with vision capabilities and JSON mode.
             # Use the async client so the event loop isn't blocked while waiting.
             response = await self.client.aio.models.generate_content(
-                model="gemini-2.5-flash-lite",
+                model="gemini-3.5-flash-lite",
                 contents=[
                     prompt,
                     image_part,

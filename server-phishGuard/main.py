@@ -112,7 +112,7 @@ async def analyze_image(
     language: str = Form("en")
 ):
     """
-    Analyze an uploaded image for phishing indicators using Gemini 2.5 Flash-Lite.
+    Analyze an uploaded image for phishing indicators using Gemini 3.5 Flash-Lite.
 
     Ephemeral Processing: Image is read directly into memory (RAM)
     and never persisted to disk.
