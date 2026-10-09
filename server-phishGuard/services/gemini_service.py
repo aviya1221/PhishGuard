@@ -33,7 +33,7 @@ PHISHING_DETECTION_PROMPT_BASE = """You are an expert phishing detection analyst
 Return ONLY a valid JSON object with NO additional text, explanation, or markdown. The JSON must contain:
 {{
   "score": <integer between 1-10, where 1=definitely safe, 10=definitely phishing>,
-  "verdict": <exactly one of: "Safe", "Suspicious", or "Phishing">,
+  "verdict": <exactly one of: "Safe", "Suspicious", or "Phishing" - always in English>,
   "red_flags": [<list of specific red flags detected, empty list if none>],
   "recommendation": <actionable security recommendation for the user>
 }}
@@ -51,7 +51,7 @@ Return ONLY a valid JSON object with NO additional text, explanation, or markdow
 5. "verdict" must be exactly one of the three allowed values
 
 ## LANGUAGE REQUIREMENT:
-You must write the values for 'verdict', 'red_flags', and 'recommendation' strictly in the following language: {language}. However, the JSON keys MUST remain exactly in English as defined in the schema."""
+You must write the values for 'red_flags' and 'recommendation' strictly in the following language: {language}. The 'verdict' value MUST always be exactly "Safe", "Suspicious", or "Phishing" in English, regardless of the language. The JSON keys MUST remain exactly in English as defined in the schema."""
 
 
 # Supported language codes mapped to the language name given to the model

@@ -10,7 +10,6 @@ function AppContent() {
   const { t } = useLanguage()
 
   const handleFileSelect = (file) => {
-    // Handle file selection (optional)
     console.log('File selected:', file)
   }
 

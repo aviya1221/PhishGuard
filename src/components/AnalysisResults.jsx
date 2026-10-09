@@ -61,7 +61,7 @@ const AnalysisResults = ({ result }) => {
           <SemiCircleGauge score={score} t={t} />
         </div>
         <div className="flex-1">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{verdict}</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{t(verdict.toLowerCase())}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('verdictDesc')}</p>
 
           <div className="mt-4">
