@@ -9,3 +9,5 @@ __pycache__/
 # Eval images contain personal messages, kept local only
 eval/images/*
 !eval/images/.gitkeep
+eval/holdout/images/*
+!eval/holdout/images/.gitkeep

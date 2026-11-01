@@ -1,0 +1,12 @@
+filename,label,source,type
+sms_18_iec.png,phishing,internet,sms
+sms_19_suspicious-activity.jpg,phishing,internet,sms
+sms_20_bit.jpg,phishing,internet,sms
+sms_21_cal.png,phishing,own,sms
+email_04_bezeq.png,phishing,internet,email
+web_01_iec.jpg,phishing,internet,web
+sms_22_shavimyoter.png,legit,own,sms
+sms_23_tefilin.png,legit,own,sms
+sms_24_charidy.png,legit,own,sms
+sms_25_pizzahut.png,legit,own,sms
+sms_26_homecenter.png,legit,own,sms

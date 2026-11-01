@@ -7,6 +7,7 @@ Usage, from server-phishGuard/:
     .venv/Scripts/python eval/run_eval.py --limit 3
     .venv/Scripts/python eval/run_eval.py
     .venv/Scripts/python eval/run_eval.py --model gemini-2.5-flash-lite
+    .venv/Scripts/python eval/run_eval.py --dir eval/holdout
 """
 import argparse
 import asyncio
@@ -213,15 +214,16 @@ async def main() -> None:
     parser.add_argument("--language", default="he", choices=sorted(SUPPORTED_LANGUAGES), help="Answer language (default: he)")
     parser.add_argument("--delay", type=float, default=5.0, help="Seconds to wait between calls, for free-tier limits (default: 5)")
     parser.add_argument("--limit", type=int, help="Only run the first N images, for a quick test")
-    parser.add_argument("--output", type=Path, help="Results file (default: eval/results.csv, or results_<model>.csv for other models)")
+    parser.add_argument("--dir", type=Path, default=EVAL_DIR, help="Folder with labels.csv and images/, e.g. eval/holdout (default: eval/)")
+    parser.add_argument("--output", type=Path, help="Results file (default: results.csv in --dir, or results_<model>.csv for other models)")
     args = parser.parse_args()
 
     if not gemini_service.is_available():
         sys.exit("GEMINI_API_KEY is not set. Put it in server-phishGuard/.env like for the server.")
 
-    images_dir = EVAL_DIR / "images"
-    rows = load_labels(EVAL_DIR / "labels.csv", images_dir)[: args.limit]
-    output = args.output or EVAL_DIR / ("results.csv" if args.model == MODEL_NAME else f"results_{args.model}.csv")
+    images_dir = args.dir / "images"
+    rows = load_labels(args.dir / "labels.csv", images_dir)[: args.limit]
+    output = args.output or args.dir / ("results.csv" if args.model == MODEL_NAME else f"results_{args.model}.csv")
 
     results = []
     for i, row in enumerate(rows, start=1):
