@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 # Gemini model used for analysis (the eval script can pass another one to compare)
 MODEL_NAME = "gemini-3.5-flash-lite"
 
+# Sampling temperature (the eval script can pass another one to compare).
+# Google recommends 1.0 for Gemini 3 models; see eval results before changing it.
+TEMPERATURE = 0.1
+
 # Base system prompt for phishing detection
 PHISHING_DETECTION_PROMPT_BASE = """You are an expert phishing detection analyst specializing in visual and textual analysis of screenshots and images.
 
@@ -143,7 +147,8 @@ class GeminiService:
         file_content: bytes,
         mime_type: str = "image/jpeg",
         language: str = "en",
-        model: str = MODEL_NAME
+        model: str = MODEL_NAME,
+        temperature: float = TEMPERATURE
     ) -> tuple[AnalysisResponse, types.GenerateContentResponseUsageMetadata | None]:
         """
         Analyze an image and also return the token usage reported by Gemini.
@@ -155,6 +160,7 @@ class GeminiService:
             mime_type: MIME type of the image (default: image/jpeg)
             language: Language code for the response (default: "en")
             model: Gemini model name (default: MODEL_NAME)
+            temperature: Sampling temperature (default: TEMPERATURE)
 
         Returns:
             Tuple of the validated analysis and the response's usage metadata (may be None)
@@ -185,7 +191,7 @@ class GeminiService:
                     "Analyze this image for phishing indicators. Return ONLY valid JSON."
                 ],
                 config=types.GenerateContentConfig(
-                    temperature=0.1,
+                    temperature=temperature,
                     response_mime_type="application/json"
                 )
             )

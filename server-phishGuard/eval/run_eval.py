@@ -8,6 +8,7 @@ Usage, from server-phishGuard/:
     .venv/Scripts/python eval/run_eval.py
     .venv/Scripts/python eval/run_eval.py --model gemini-2.5-flash-lite
     .venv/Scripts/python eval/run_eval.py --dir eval/holdout
+    .venv/Scripts/python eval/run_eval.py --temperature 1.0
 """
 import argparse
 import asyncio
@@ -26,7 +27,7 @@ SERVER_DIR = EVAL_DIR.parent
 sys.path.insert(0, str(SERVER_DIR))
 load_dotenv(SERVER_DIR / ".env")
 
-from services.gemini_service import MODEL_NAME, SUPPORTED_LANGUAGES, gemini_service  # noqa: E402
+from services.gemini_service import MODEL_NAME, SUPPORTED_LANGUAGES, TEMPERATURE, gemini_service  # noqa: E402
 
 # USD per 1M tokens as (input, output), copied from Google's pricing page.
 # Left empty on purpose: fill them in yourself, never guess. Thinking tokens are billed as output.
@@ -51,7 +52,7 @@ IMAGE_SIGNATURES = {
 }
 
 RESULT_COLUMNS = [
-    "filename", "label", "source", "type", "model", "language", "score", "verdict", "detected", "correct",
+    "filename", "label", "source", "type", "model", "temperature", "language", "score", "verdict", "detected", "correct",
     "latency_s", "input_tokens", "image_tokens", "output_tokens", "thinking_tokens", "cost_usd", "error",
 ]
 
@@ -114,9 +115,9 @@ def cost_usd(tokens: dict, model: str) -> float | None:
     return (tokens["input_tokens"] * price_in + billed_output * price_out) / 1_000_000
 
 
-async def evaluate_image(row: dict, images_dir: Path, model: str, language: str) -> dict:
+async def evaluate_image(row: dict, images_dir: Path, model: str, temperature: float, language: str) -> dict:
     """Analyze one image and return a result row. Errors are recorded, not raised."""
-    result = {**row, "model": model, "language": language}
+    result = {**row, "model": model, "temperature": temperature, "language": language}
     data = (images_dir / row["filename"]).read_bytes()
     mime_type = detect_mime_type(data)
     if mime_type is None:
@@ -124,7 +125,7 @@ async def evaluate_image(row: dict, images_dir: Path, model: str, language: str)
 
     start = time.perf_counter()
     try:
-        analysis, usage = await gemini_service.analyze_image_with_usage(data, mime_type, language, model)
+        analysis, usage = await gemini_service.analyze_image_with_usage(data, mime_type, language, model, temperature)
     except Exception as e:  # HTTPException from the service, or anything unexpected
         return {**result, "latency_s": round(time.perf_counter() - start, 2), "error": getattr(e, "detail", str(e))}
     latency = time.perf_counter() - start
@@ -154,7 +155,7 @@ def average(values: list) -> str:
     return f"{sum(values) / len(values):,.1f}" if values else "n/a"
 
 
-def print_summary(results: list[dict], model: str) -> None:
+def print_summary(results: list[dict], model: str, temperature: float) -> None:
     ok = [r for r in results if not r["error"]]
     failed = [r for r in results if r["error"]]
     tp = sum(r["label"] == "phishing" and r["detected"] for r in ok)
@@ -162,7 +163,7 @@ def print_summary(results: list[dict], model: str) -> None:
     fp = sum(r["label"] == "legit" and r["detected"] for r in ok)
     tn = sum(r["label"] == "legit" and not r["detected"] for r in ok)
 
-    print(f"\n=== Summary: {model} ===")
+    print(f"\n=== Summary: {model}, temperature {temperature:g} ===")
     print(f"Images analyzed: {len(ok)}, failed: {len(failed)}")
     for r in failed:
         print(f"  FAILED {r['filename']}: {r['error']}")
@@ -212,11 +213,12 @@ def write_results(results: list[dict], output: Path) -> None:
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate PhishGuard on the labeled image set.")
     parser.add_argument("--model", default=MODEL_NAME, help=f"Gemini model (default: {MODEL_NAME})")
+    parser.add_argument("--temperature", type=float, default=TEMPERATURE, help=f"Sampling temperature (default: {TEMPERATURE})")
     parser.add_argument("--language", default="he", choices=sorted(SUPPORTED_LANGUAGES), help="Answer language (default: he)")
     parser.add_argument("--delay", type=float, default=5.0, help="Seconds to wait between calls, for free-tier limits (default: 5)")
     parser.add_argument("--limit", type=int, help="Only run the first N images, for a quick test")
     parser.add_argument("--dir", type=Path, default=EVAL_DIR, help="Folder with labels.csv and images/, e.g. eval/holdout (default: eval/)")
-    parser.add_argument("--output", type=Path, help="Results file (default: results.csv in --dir, or results_<model>.csv for other models)")
+    parser.add_argument("--output", type=Path, help="Results file (default: results.csv in --dir, with _<model> and _t<temperature> added when they differ from the defaults)")
     args = parser.parse_args()
 
     if not gemini_service.is_available():
@@ -224,19 +226,22 @@ async def main() -> None:
 
     images_dir = args.dir / "images"
     rows = load_labels(args.dir / "labels.csv", images_dir)[: args.limit]
-    output = args.output or args.dir / ("results.csv" if args.model == MODEL_NAME else f"results_{args.model}.csv")
+    # Non-default settings go into the file name, so they never overwrite the baseline results.csv
+    suffix = "" if args.model == MODEL_NAME else f"_{args.model}"
+    suffix += "" if args.temperature == TEMPERATURE else f"_t{args.temperature:g}"
+    output = args.output or args.dir / f"results{suffix}.csv"
 
     results = []
     for i, row in enumerate(rows, start=1):
         if i > 1:
             await asyncio.sleep(args.delay)
-        result = await evaluate_image(row, images_dir, args.model, args.language)
+        result = await evaluate_image(row, images_dir, args.model, args.temperature, args.language)
         results.append(result)
         outcome = f"ERROR {result['error']}" if result["error"] else f"{result['verdict']} ({result['score']})"
         print(f"[{i}/{len(rows)}] {row['filename']:32} {row['label']:9} -> {outcome}  {result.get('latency_s', '')}s")
 
     write_results(results, output)
-    print_summary(results, args.model)
+    print_summary(results, args.model, args.temperature)
     print(f"\nSaved {output}")
 
 
