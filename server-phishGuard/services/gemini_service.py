@@ -32,6 +32,19 @@ PHISHING_DETECTION_PROMPT_BASE = """You are an expert phishing detection analyst
 - Domain/Email Indicators: Suspicious email addresses, mismatched domains
 - Urgency Markers: Time-sensitive language, artificial scarcity, deadline pressure
 
+## SIGNAL WEIGHTING
+Weak signals, not enough on their own: shortened links, marketing urgency
+("last days", "limited offer"), emojis, promotional tone.
+Many legitimate Israeli businesses use them in SMS and email marketing.
+
+Strong signals: a request for payment, a debt or a fine; a request for login
+details, card details or personal information; a domain that imitates a known
+brand; a regular phone number posing as an organization; threats of account
+suspension or legal action.
+
+Give "Phishing" only when at least one strong signal is present.
+If there are only weak signals and the sender matches the brand, the message is "Safe".
+
 ## OUTPUT FORMAT (STRICT JSON ONLY):
 Return ONLY a valid JSON object with NO additional text, explanation, or markdown. The JSON must contain:
 {{
