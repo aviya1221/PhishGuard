@@ -65,7 +65,7 @@ async def guard_analyze_requests(request: Request, call_next):
             )
         if int(content_length) > MAX_UPLOAD_BYTES + MULTIPART_OVERHEAD_BYTES:
             return JSONResponse(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 content={"detail": f"File is too large. Maximum size is {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."}
             )
 
@@ -142,7 +142,7 @@ async def analyze_image(
 
     if len(file_content) > MAX_UPLOAD_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"File is too large. Maximum size is {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
         )
 
