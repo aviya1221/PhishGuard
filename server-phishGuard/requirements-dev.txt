@@ -1,3 +1,5 @@
 -r requirements.txt
 pillow
 python-bidi
+pytest
+httpx

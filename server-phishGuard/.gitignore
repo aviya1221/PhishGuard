@@ -5,6 +5,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.pytest_cache/
 
 # Eval images contain personal messages, kept local only
 eval/images/*
