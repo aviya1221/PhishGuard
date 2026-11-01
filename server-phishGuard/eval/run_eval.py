@@ -40,8 +40,9 @@ ALLOWED = {
     "type": {"sms", "email", "web"},
 }
 
-# A phishing image counts as caught when the verdict is Suspicious or Phishing
-DETECTED_VERDICTS = {"Suspicious", "Phishing"}
+# Strict: only Phishing counts as detected. Suspicious is a soft warning, so it is a miss on
+# phishing and not a false alarm on legit. Same cut on both sides, or "always Suspicious" would score 100%.
+DETECTED_VERDICTS = {"Phishing"}
 
 # Same magic bytes check as the API (main.py)
 IMAGE_SIGNATURES = {
@@ -168,7 +169,7 @@ def print_summary(results: list[dict], model: str) -> None:
     if not ok:
         return
 
-    print("\nConfusion matrix (detected = Suspicious or Phishing)")
+    print("\nConfusion matrix (detected = Phishing)")
     print(f"{'':18}{'detected':>10}{'missed':>10}")
     print(f"{'actual phishing':18}{tp:>10}{fn:>10}")
     print(f"{'actual legit':18}{fp:>10}{tn:>10}")
