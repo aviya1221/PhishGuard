@@ -30,7 +30,7 @@ const SemiCircleGauge = ({ score, t }) => {
           strokeLinecap="round"
           strokeDasharray={`${dash} ${gap}`}
         />
-        <text x="0" y="-20" textAnchor="middle" className="text-sm font-medium" fill="#111827" style={{fontSize: '14px'}}>
+        <text x="0" y="-20" textAnchor="middle" className="text-sm font-medium fill-slate-900 dark:fill-slate-200" style={{fontSize: '14px'}}>
           {t('score')}
         </text>
         <text x="0" y="28" textAnchor="middle" className="font-bold" style={{fontSize: '20px', fill: color}}>
