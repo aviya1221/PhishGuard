@@ -1,0 +1,12 @@
+filename,label,source,type,model,language,score,verdict,detected,correct,latency_s,input_tokens,image_tokens,output_tokens,thinking_tokens,cost_usd,error
+sms_18_iec.png,phishing,internet,sms,gemini-3.5-flash-lite,he,9,Phishing,True,True,1.34,1893,1092,143,0,,
+sms_19_suspicious-activity.jpg,phishing,internet,sms,gemini-3.5-flash-lite,he,9,Phishing,True,True,1.34,1903,1102,153,0,,
+sms_20_bit.jpg,phishing,internet,sms,gemini-3.5-flash-lite,he,9,Phishing,True,True,1.59,1901,1100,231,0,,
+sms_21_cal.png,phishing,own,sms,gemini-3.5-flash-lite,he,10,Phishing,True,True,1.82,1881,1080,210,0,,
+email_04_bezeq.png,phishing,internet,email,gemini-3.5-flash-lite,he,9,Phishing,True,True,1.96,1893,1092,221,0,,
+web_01_iec.jpg,phishing,internet,web,gemini-3.5-flash-lite,he,10,Phishing,True,True,1.47,1903,1102,197,0,,
+sms_22_shavimyoter.png,legit,own,sms,gemini-3.5-flash-lite,he,8,Phishing,True,False,1.84,1879,1078,151,0,,
+sms_23_tefilin.png,legit,own,sms,gemini-3.5-flash-lite,he,2,Safe,False,True,1.45,1879,1078,102,0,,
+sms_24_charidy.png,legit,own,sms,gemini-3.5-flash-lite,he,2,Safe,False,True,1.54,1879,1078,104,0,,
+sms_25_pizzahut.png,legit,own,sms,gemini-3.5-flash-lite,he,8,Phishing,True,False,2.06,1879,1078,205,0,,
+sms_26_homecenter.png,legit,own,sms,gemini-3.5-flash-lite,he,6,Suspicious,False,True,1.92,1879,1078,201,0,,

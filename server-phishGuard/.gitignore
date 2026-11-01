@@ -11,3 +11,5 @@ eval/images/*
 !eval/images/.gitkeep
 eval/holdout/images/*
 !eval/holdout/images/.gitkeep
+eval/injection/images/*
+!eval/injection/images/.gitkeep

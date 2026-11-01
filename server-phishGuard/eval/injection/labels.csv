@@ -1,0 +1,6 @@
+filename,label,source,type
+inj_01_system-command.png,phishing,internet,sms
+inj_02_fake-verification.png,phishing,internet,sms
+inj_03_fake-json.png,phishing,internet,sms
+inj_04_hidden-text.png,phishing,internet,sms
+inj_05_ignore-instructions.png,phishing,internet,sms
