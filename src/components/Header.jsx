@@ -9,7 +9,9 @@ const Header = () => {
     <header dir="ltr" className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            {/* Same shield-and-hook logo as the favicon; decorative, the title next to it says the name */}
+            <img src="/favicon.svg" alt="" aria-hidden="true" className="w-8 h-8" />
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">PhishGuard AI</h1>
           </div>
           <div className="flex items-center space-x-4">
