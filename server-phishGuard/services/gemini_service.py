@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -16,6 +17,10 @@ MODEL_NAME = "gemini-3.5-flash-lite"
 # Sampling temperature (the eval script can pass another one to compare).
 # Google recommends 1.0 for Gemini 3 models; see eval results before changing it.
 TEMPERATURE = 0.1
+
+# Seconds to wait for Gemini before giving up. Normal calls take ~2 s; on a slow day
+# successful calls took up to ~30 s, so the limit sits above that with some margin.
+REQUEST_TIMEOUT_SECONDS = 45
 
 # Base system prompt for phishing detection
 PHISHING_DETECTION_PROMPT_BASE = """You are an expert phishing detection analyst specializing in visual and textual analysis of screenshots and images.
@@ -182,18 +187,22 @@ class GeminiService:
             prompt = get_phishing_detection_prompt(language)
 
             # Call Gemini model with vision capabilities and JSON mode.
-            # Use the async client so the event loop isn't blocked while waiting.
-            response = await self.client.aio.models.generate_content(
-                model=model,
-                contents=[
-                    prompt,
-                    image_part,
-                    "Analyze this image for phishing indicators. Return ONLY valid JSON."
-                ],
-                config=types.GenerateContentConfig(
-                    temperature=temperature,
-                    response_mime_type="application/json"
-                )
+            # Use the async client so the event loop isn't blocked while waiting,
+            # and bound the total wait so a stuck call can't hang the request.
+            response = await asyncio.wait_for(
+                self.client.aio.models.generate_content(
+                    model=model,
+                    contents=[
+                        prompt,
+                        image_part,
+                        "Analyze this image for phishing indicators. Return ONLY valid JSON."
+                    ],
+                    config=types.GenerateContentConfig(
+                        temperature=temperature,
+                        response_mime_type="application/json"
+                    )
+                ),
+                timeout=REQUEST_TIMEOUT_SECONDS
             )
 
             # Extract response text
@@ -208,6 +217,13 @@ class GeminiService:
 
         except HTTPException:
             raise
+        except TimeoutError:
+            # Must come before the generic handler, or a timeout would turn into a 502
+            logger.error(f"AI analysis timed out after {REQUEST_TIMEOUT_SECONDS} s")
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail="AI analysis timed out. Please try again."
+            )
         except Exception as e:
             logger.error(f"AI analysis error: {str(e)}")
             raise HTTPException(

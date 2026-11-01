@@ -31,6 +31,7 @@ const translations = {
     invalidFileType: 'Please upload a PNG, JPG, or JPEG file.',
     fileTooLarge: 'The file is too large. Maximum size is 10 MB.',
     tooManyRequests: 'Too many scans in a short time. Please wait a minute and try again.',
+    analysisTimeout: 'The analysis took too long. Please try again.',
     cancel: 'Cancel'
   },
   he: {
@@ -59,6 +60,7 @@ const translations = {
     invalidFileType: 'יש להעלות קובץ מסוג PNG, JPG או JPEG.',
     fileTooLarge: 'הקובץ גדול מדי. הגודל המקסימלי הוא 10MB.',
     tooManyRequests: 'בוצעו יותר מדי סריקות בזמן קצר. אנא המתן דקה ונסה שוב.',
+    analysisTimeout: 'הניתוח לקח יותר מדי זמן. אנא נסה שוב.',
     cancel: 'ביטול'
   }
 };

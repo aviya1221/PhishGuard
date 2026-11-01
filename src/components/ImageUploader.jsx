@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 const SCAN_MESSAGE_KEYS = ['analyzingBranding', 'checkingUrls', 'evaluatingTone'];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // Must match MAX_UPLOAD_BYTES on the server
 // Translation keys for HTTP errors the server returns on purpose
-const ERROR_MESSAGE_KEYS = { 413: 'fileTooLarge', 415: 'invalidFileType', 429: 'tooManyRequests' };
+const ERROR_MESSAGE_KEYS = { 413: 'fileTooLarge', 415: 'invalidFileType', 429: 'tooManyRequests', 504: 'analysisTimeout' };
 
 const ImageUploader = ({ onFileSelect, onScanComplete }) => {
   const { t, language } = useLanguage();
