@@ -5,3 +5,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+
+# Eval images contain personal messages, kept local only
+eval/images/*
+!eval/images/.gitkeep

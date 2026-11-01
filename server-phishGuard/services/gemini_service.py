@@ -10,6 +10,9 @@ from models.schemas import AnalysisResponse
 
 logger = logging.getLogger(__name__)
 
+# Gemini model used for analysis (the eval script can pass another one to compare)
+MODEL_NAME = "gemini-3.5-flash-lite"
+
 # Base system prompt for phishing detection
 PHISHING_DETECTION_PROMPT_BASE = """You are an expert phishing detection analyst specializing in visual and textual analysis of screenshots and images.
 
@@ -98,7 +101,7 @@ class GeminiService:
         language: str = "en"
     ) -> AnalysisResponse:
         """
-        Analyze an image for phishing indicators using Gemini 3.5 Flash-Lite.
+        Analyze an image for phishing indicators.
 
         Args:
             file_content: Image file content as bytes
@@ -107,6 +110,33 @@ class GeminiService:
 
         Returns:
             AnalysisResponse: Analysis results with score, verdict, red flags, and recommendation
+
+        Raises:
+            HTTPException: If API is unavailable or analysis fails
+        """
+        analysis, _ = await self.analyze_image_with_usage(file_content, mime_type, language)
+        return analysis
+
+    async def analyze_image_with_usage(
+        self,
+        file_content: bytes,
+        mime_type: str = "image/jpeg",
+        language: str = "en",
+        model: str = MODEL_NAME
+    ) -> tuple[AnalysisResponse, types.GenerateContentResponseUsageMetadata | None]:
+        """
+        Analyze an image and also return the token usage reported by Gemini.
+
+        The API endpoint uses analyze_image; the eval script uses this to measure cost.
+
+        Args:
+            file_content: Image file content as bytes
+            mime_type: MIME type of the image (default: image/jpeg)
+            language: Language code for the response (default: "en")
+            model: Gemini model name (default: MODEL_NAME)
+
+        Returns:
+            Tuple of the validated analysis and the response's usage metadata (may be None)
 
         Raises:
             HTTPException: If API is unavailable or analysis fails
@@ -127,7 +157,7 @@ class GeminiService:
             # Call Gemini model with vision capabilities and JSON mode.
             # Use the async client so the event loop isn't blocked while waiting.
             response = await self.client.aio.models.generate_content(
-                model="gemini-3.5-flash-lite",
+                model=model,
                 contents=[
                     prompt,
                     image_part,
@@ -147,7 +177,7 @@ class GeminiService:
 
             # Parse and validate response (JSON mode guarantees valid JSON)
             analysis = self._parse_response(response.text)
-            return analysis
+            return analysis, response.usage_metadata
 
         except HTTPException:
             raise

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Raw eval image collection (personal messages)
+DATASET/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
