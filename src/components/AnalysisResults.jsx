@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/useLanguage';
 
 const getColorForScore = (score) => {
   if (score <= 3) return '#16a34a'; // green

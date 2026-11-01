@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import api from '../services/api';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/useLanguage';
 
 const SCAN_MESSAGE_KEYS = ['analyzingBranding', 'checkingUrls', 'evaluatingTone'];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // Must match MAX_UPLOAD_BYTES on the server

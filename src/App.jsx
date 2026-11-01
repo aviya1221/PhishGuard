@@ -3,7 +3,8 @@ import ImageUploader from './components/ImageUploader'
 import AnalysisResults from './components/AnalysisResults'
 import Header from './components/Header'
 import { ThemeProvider } from './contexts/ThemeContext'
-import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
+import { LanguageProvider } from './contexts/LanguageContext'
+import { useLanguage } from './contexts/useLanguage'
 
 function AppContent() {
   const [analysisResult, setAnalysisResult] = useState(null)

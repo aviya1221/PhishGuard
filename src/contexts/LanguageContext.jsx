@@ -1,8 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-
-const LanguageContext = createContext();
-
-export const useLanguage = () => useContext(LanguageContext);
+import { useEffect, useState } from 'react';
+import { LanguageContext } from './useLanguage';
 
 const translations = {
   en: {

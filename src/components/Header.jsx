@@ -1,5 +1,5 @@
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/useTheme';
+import { useLanguage } from '../contexts/useLanguage';
 
 const Header = () => {
   const { isDark, toggleTheme } = useTheme();
