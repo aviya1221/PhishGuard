@@ -70,7 +70,7 @@ cli-phishGuard/
 ├── render.yaml                 # Render Blueprint for the backend
 ├── .env.production             # VITE_API_BASE_URL for production builds (the Render URL)
 ├── .env.local                  # VITE_API_BASE_URL for local dev (not committed)
-├── .claude/skills/             # Claude instructions: interaction, secure-arch, visualizer
+├── .claude/skills/             # Claude instructions: react-arch, upload-flow, results-view
 ├── public/
 │   └── favicon.svg             # Shield-and-hook icon
 ├── src/
@@ -108,7 +108,7 @@ cli-phishGuard/
     ├── pytest.ini
     ├── .gitignore              # Excludes .env, .venv, caches and the eval images
     ├── .env                    # GEMINI_API_KEY, PORT (not committed)
-    └── .claude/skills/         # Claude instructions: ai-specialist, fastapi-arch
+    └── .claude/skills/         # Claude instructions: fastapi-arch, gemini-integration, test-writer, prompt-eval
 ```
 
 > **Note:** the frontend and backend live in the same repo. `render.yaml` sets `server-phishGuard` as the Render service's root directory.

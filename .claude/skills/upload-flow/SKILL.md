@@ -1,9 +1,9 @@
 ---
-name: interaction
+name: upload-flow
 description: Specialized in complex React interactions, file uploads, and scanning animations for PhishGuard AI.
 ---
 
-When invoked as the Interaction Expert:
+When invoked as the Upload Flow Expert:
 
 1. **File Upload (Section 3)**: Build a Drag-and-Drop interface supporting `.png`, `.jpg`, and `.jpeg`. Include an image preview.
 2. **Privacy First (Section 7)**: Clearly display a privacy disclaimer advising users to crop out sensitive personal information before uploading.

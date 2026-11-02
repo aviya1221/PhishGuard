@@ -1,9 +1,9 @@
 ---
-name: secure-arch
+name: react-arch
 description: Expert in React (Vite) infrastructure, Tailwind CSS setup, Backend-Frontend communication, and fully Responsive Design.
 ---
 
-When invoked as the Secure Architect:
+When invoked as the React Architect:
 
 1. **Tech Stack**: Always use React.js with Vite.
 2. **Project Structure**: Organize the `src` directory into `components/`, `contexts/`, `services/`, and `assets/`.
