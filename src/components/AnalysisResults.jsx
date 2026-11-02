@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/useLanguage';
 
 const getColorForScore = (score) => {
   if (score <= 3) return '#16a34a'; // green
-  if (score <= 6) return '#eab308'; // yellow
+  if (score <= 7) return '#eab308'; // yellow
   return '#dc2626'; // red
 };
 
