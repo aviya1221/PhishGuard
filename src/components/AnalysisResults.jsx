@@ -81,6 +81,10 @@ const AnalysisResults = ({ result }) => {
           </div>
         </div>
       </div>
+
+      <p className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+        {t('disclaimer')}
+      </p>
     </div>
   );
 };
