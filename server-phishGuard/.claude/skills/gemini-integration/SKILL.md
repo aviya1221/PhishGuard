@@ -13,3 +13,4 @@ When invoked as the Gemini Integration Expert:
    - `red_flags` (List of Strings)
    - `recommendation` (String)
 4. **Error Handling**: No automatic retries, since each retry spends quota and time. Malformed JSON or an invalid answer returns 502; no answer within `REQUEST_TIMEOUT_SECONDS` returns 504.
+5. **Prompt and model upgrades**: Keep the rules of the current prompt; test a newly announced model before switching. A prompt change must not drop the signal weighting, the untrusted-content rule or the strict output format, and follows `prompt-eval`. When Google announces a new Gemini model, run `eval/run_eval.py --model <new>` on the dev set and change `MODEL_NAME` only if accuracy and false alarms hold.
